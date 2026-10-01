@@ -1,4 +1,24 @@
-# HTML Hello
+ # API de catálogo de libros
+
+API REST construida con FastAPI, TinyDB y Pydantic siguiendo una arquitectura MVC.
+
+## Instalación y ejecución
+
+```bash
+pip install -r requirements.txt
+python seed.py
+python server.py
+```
+
+La API queda disponible en `http://localhost:3000` y su documentación interactiva en `http://localhost:3000/docs`.
+
+## Endpoints
+
+- `GET /books`: listar libros.
+- `GET /books/{book_id}`: consultar un libro.
+- `POST /books`: crear un libro.
+- `PATCH /books/{book_id}/status`: actualizar el estado con `{"status": "available"}` o `{"status": "checked_out"}`.
+- `DELETE /books/{book_id}`: eliminar un libro.
 
 El boilerplate más básico para cualquier estudiante de 4Geeks Academy, empieza tu primer sitio web desde cero.
 
