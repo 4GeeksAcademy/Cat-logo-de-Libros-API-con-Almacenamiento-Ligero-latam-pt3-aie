@@ -38,3 +38,5 @@ def delete_book(book_id: int) -> Response:
     if not book_controller.delete_book(book_id):
         raise HTTPException(status_code=404, detail="Book not found")
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    
