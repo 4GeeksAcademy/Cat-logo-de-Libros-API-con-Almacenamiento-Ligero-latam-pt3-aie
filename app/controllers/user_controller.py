@@ -3,6 +3,7 @@ from tinydb import Query
 from tinydb.table import Document
 
 from app.database import profiles_table, users_table
+from app.config import settings
 from app.models.profile import ProfileResponse, ProfileUpdate
 from app.models.user import UserCreate, UserResponse
 
@@ -32,6 +33,20 @@ def _to_user(document: Document) -> UserResponse:
     return UserResponse(id=document.doc_id, **document)
 
 
+def get_user_role(document: Document) -> str:
+    """Resolve allowlisted admins and safely default legacy/public users."""
+    email = str(document.get("email", "")).strip().lower()
+    admin_email = (settings.ADMIN_EMAIL or "").strip().lower()
+    role = (
+        "admin"
+        if admin_email and email == admin_email and document.get("role") == "admin"
+        else "user"
+    )
+    if document.get("role") != role:
+        users_table.update({"role": role}, doc_ids=[document.doc_id])
+    return role
+
+
 def create_user(user_data: UserCreate) -> tuple[UserResponse, ProfileResponse]:
     password_hash = bcrypt.hashpw(
         user_data.password.encode("utf-8"), bcrypt.gensalt()
@@ -42,6 +57,7 @@ def create_user(user_data: UserCreate) -> tuple[UserResponse, ProfileResponse]:
             "username": user_data.username,
             "email": user_data.email,
             "password_hash": password_hash,
+            "role": "user",
         }
     )
     profile_id = profiles_table.insert(

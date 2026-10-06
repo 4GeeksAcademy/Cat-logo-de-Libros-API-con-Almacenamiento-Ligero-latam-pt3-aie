@@ -9,6 +9,7 @@ from tinydb import Query
 from tinydb.table import Document
 
 from app.config import settings
+from app.controllers.user_controller import get_user_role
 from app.database import users_table
 
 
@@ -51,3 +52,12 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> Document:
     if user is None:
         raise unauthorized
     return user
+
+
+def require_admin(current_user: Document = Depends(get_current_user)) -> Document:
+    if get_user_role(current_user) != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrator role required",
+        )
+    return current_user

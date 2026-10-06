@@ -12,4 +12,5 @@ class LoginRequest(BaseModel):
 
 class CurrentUserResponse(BaseModel):
     email: str
+    role: str
     profile: ProfileResponse

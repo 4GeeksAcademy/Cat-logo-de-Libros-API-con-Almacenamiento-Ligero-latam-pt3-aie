@@ -1,64 +1,78 @@
- # API de catálogo de libros
+# Catálogo de libros
 
-API REST construida con FastAPI, TinyDB y Pydantic siguiendo una arquitectura MVC.
+Aplicación full-stack para gestionar un catálogo de libros. El backend es una API REST con FastAPI, TinyDB y JWT; el frontend es una aplicación Next.js con autenticación y vistas según el rol.
 
-## Instalación y ejecución
+## Requisitos
+
+- Python 3.10 o posterior.
+- Node.js 20.9 o posterior y npm.
+
+## Backend
+
+1. Crea y activa un entorno virtual, e instala dependencias:
+
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # En Windows: .venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
+
+2. Crea `.env` en la raíz del repositorio. Configura al menos una clave de firma JWT fuerte:
+
+   ```dotenv
+   SECRET_KEY=pon-aqui-un-secreto-aleatorio-largo
+   ADMIN_EMAIL=admin@ejemplo.com
+   FRONTEND_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+   ```
+
+   Mantén `.env` fuera del control de versiones. `ADMIN_EMAIL` no crea ni verifica la cuenta: el registro público siempre crea usuarios `user`. Para habilitar el rol admin, registra la cuenta y provisiona manualmente su campo `role` como `admin` en TinyDB (`db.json`); la API solo reconoce ese rol cuando el email coincide con `ADMIN_EMAIL`. Limita el acceso de escritura a la base de datos y no expongas este mecanismo a clientes.
+
+3. (Opcional) Para reemplazar los datos de la base de datos local por los datos iniciales, ejecuta `python seed.py`. Luego inicia el backend:
+
+   ```bash
+   python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+   ```
+
+La API queda disponible en `http://localhost:8000` y su documentación OpenAPI en `/docs`. Se recomienda este puerto para evitar el conflicto con Next.js, que por defecto utiliza `3000`. Alternativamente, `python server.py` inicia el backend en el puerto `3000`; en ese caso debes mover uno de los servidores a otro puerto. `FRONTEND_ORIGINS` es una lista separada por comas de orígenes permitidos, sin rutas.
+
+## Frontend
+
+Con el backend disponible, en otra terminal:
 
 ```bash
-pip install -r requirements.txt
-python seed.py
-python server.py
+cd frontend
+npm ci
+cp .env.local.example .env.local
 ```
 
-La API queda disponible en `http://localhost:3000` y su documentación interactiva en `http://localhost:3000/docs`.
+Revisa `frontend/.env.local` y configura la dirección del backend:
 
-## Endpoints
+```dotenv
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
 
-- `GET /books`: listar libros.
-- `GET /books/{book_id}`: consultar un libro.
-- `POST /books`: crear un libro.
-- `PATCH /books/{book_id}/status`: actualizar el estado con `{"status": "available"}` o `{"status": "checked_out"}`.
-- `DELETE /books/{book_id}`: eliminar un libro.
-
-El boilerplate más básico para cualquier estudiante de 4Geeks Academy, empieza tu primer sitio web desde cero.
-
-> Tienes un video tutorial sobre [cómo usar esta plantilla para crear tu primer sitio web aquí](https://youtu.be/dfbDCMu_p-0).
-
-## ¿Qué hacer a continuación?
-
-Crea un archivo `index.html` con [la estructura básica de HTML](https://4geeks.com/es/lesson/what-is-html-learn-html-es#estructura-de-pgina) y ve el resultado en vivo corriendo un servidor web utilizando el siguiente comando:
+Después inicia el servidor de desarrollo:
 
 ```bash
-$ pip3 install flask && python3 server.py
+npm run dev
 ```
 
-- Puedes crear tantos archivos HTML cómo desees.
-- También puedes crear archivos CSS e importarlos en tu página web utilizando una etiqueta `<link>` ubicándola entre las etiquetas `<head></head>`, de la siguiente manera:
+Abre `http://localhost:3000`. Si usaste el puerto recomendado `8000` para el backend, los valores por defecto de `NEXT_PUBLIC_API_URL` y `FRONTEND_ORIGINS` quedan alineados.
 
-```html
-<head>
-  ...
-  <link rel="stylesheet" type="text/css" href="styles.css">
-  ...
-</head>
+Comandos de validación del frontend:
+
+```bash
+npm run typecheck
+npm run build
+npm audit --omit=dev
 ```
 
-- Si deseas usar Tailwind CSS, agrégalo de forma opcional mediante el CDN oficial de Tailwind CSS v4 dentro del mismo `<head>`:
+## Autenticación y permisos
 
-```html
-<head>
-  ...
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-  <link rel="stylesheet" type="text/css" href="styles.css">
-  ...
-</head>
-```
+- `POST /users` registra una cuenta normal; `POST /auth/login` devuelve un token Bearer.
+- `GET /auth/me` devuelve la cuenta autenticada y su rol. El frontend persiste el token en `localStorage`.
+- Libros: `GET /books` y `GET /books/{book_id}` requieren autenticación; crear, actualizar estado y eliminar requiere `admin`.
+- El perfil se consulta y actualiza en `/profile/me`.
+- El token expira según `ACCESS_TOKEN_EXPIRE_MINUTES` (30 minutos por defecto); no hay refresh token.
 
-
-## Agradecimientos
-
-Esta y otras plantillas son utilizadas para [aprender a programar](https://4geeksacademy.com/es/aprender-a-programar/aprender-a-programar-desde-cero) por parte de los alumnos de 4Geeks Academy [Coding Bootcamp](https://4geeksacademy.com/us/coding-bootcamp). 
-
-Realizado por [Alejandro Sánchez](https://twitter.com/alesanchezr) y muchos otros contribuyentes. 
-
-Conoce más sobre nuestros [Cursos de Programación](https://4geeksacademy.com/es/curso-de-programacion-desde-cero/?lang=es) para convertirte en [Full Stack Developer](https://4geeksacademy.com/es/desarrollador-full-stack/desarrollador-full-stack), o nuestro [Data Science Bootcamp](https://4geeksacademy.com/es/coding-bootcamps/curso-datascience-machine-learning).
+Más detalles de la estructura y decisiones del cliente están en [`Frontend-plan.md`](Frontend-plan.md).
